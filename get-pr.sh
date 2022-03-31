@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#Setting up base HTML Template
 html_email_tmp_file='html_email_'`date +%Y%m%d%m`
 echo $html_email_tmp_file
 echo "FROM:sameer.samant@org.com" > $html_email_tmp_file
@@ -15,12 +16,15 @@ echo "<TD ALIGN=CENTER CELLPADDING=5><FONT COLOR=WHITE><B>PR STATUS</B></FONT></
 echo "<TD ALIGN=CENTER CELLPADDING=5><FONT COLOR=WHITE><B>PR URL</B></FONT></TD>" >> $html_email_tmp_file
 echo "</TR>" >> $html_email_tmp_file
 
+#Getting PR data
 curl https://api.github.com/repos/thessandman/mycodetest/pulls?state=all > pr_data.json
 >pr_data.dat
 pr_count=`cat pr_data.json | grep -w 'title' | wc -l`
+
 status=
 pr_name=
 pr_url=
+
 for ((i=0; i<$pr_count; i++))
 do
 	cat pr_data.json | jq -r '[.['$i'].title,.['$i'].state,.['$i'].html_url] | @tsv' | tr '\t' '|' >> pr_data.dat	
@@ -48,8 +52,15 @@ fi
 	echo "</TR>" >> $html_email_tmp_file
 
 done < pr_data.dat
+
+#Closing HTML 
 echo "</TABLE>" >> $html_email_tmp_file
 echo "</BODY>" >> $html_email_tmp_file
 echo "</HTML>" >> $html_email_tmp_file
+
+#Sending email and clearing temp files
 cat $html_email_tmp_file | /usr/sbin/sendmail -t
+
 rm $html_email_tmp_file
+rm pr_data.dat
+rm pr_data.json
